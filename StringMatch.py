@@ -14,13 +14,22 @@ def cuda_compare(a, b, c):
 @cuda.jit(argtypes=[f8[:], f8[:], f8[:]], target='gpu')
 def cuda_match(a, b, c):
     i = cuda.grid(1)
-    for k in range (len(b)) :
-        if (a[i] == b[k]) :
+    for j in range (len(b)) :
+        if (a[i] == b[j]) :
             c[i] = a[i]
             break
         else :
             c[i] = 0
 
+def cuda_match_cpu(a, b, c) :
+    for i in range(len(a)) :
+        print i
+        for j in range(len(b)) :
+            if a[i] == b[j] :
+                c[i] = a[i]
+                break
+            else :
+                c[i] = 0
 
 griddim = 50, 1
 blockdim = 32, 1, 1
@@ -28,22 +37,30 @@ N = griddim[0] * blockdim[0]
 
 #f = open('acc_master.csv','r')
 #f2 = open('acc_ref.csv','r')
-f = open('acc_master_test.txt','r')
-f2 = open('acc_ref_test.txt','r')
+f = open('sample1-1600.csv','r')
+f2 = open('sample2-1600.csv','r')
+#f = open('acc_master_test.csv','r')
+#f2 = open('acc_ref_test.csv','r')
 
 list_master = []
 list_ref = []
 
-print 'isi file acc_master.csv'
+loadTime = timer()
+print f
 for line in f:
-	print line
+	#print line
 	list_master.append(float64(line))
 
-print 'isi file acc_ref.csv'
+print f2
 for line in f2:
-	print line
+	#print line
 	list_ref.append(float64(line))
-	
+
+endofLoadTime = timer()
+
+print 'loading time = ', endofLoadTime - loadTime
+f.close()
+f2.close()	
 # process of matching
 #cuda_compare_configured = cuda_compare.configure(griddim, blockdim)
 cuda_match_configured = cuda_match.configure(griddim, blockdim)
@@ -51,11 +68,13 @@ cuda_match_configured = cuda_match.configure(griddim, blockdim)
 aa = np.asarray(list_master,dtype=np.float64)
 bb = np.asarray(list_ref,dtype=np.float64)
 cc = np.empty_like(aa,dtype=np.float64)
+
 timeStart = timer() # start count time
 
 #cuda_compare_configured(aa, bb, cc)
 print 'start of matching in gpu'
 cuda_match_configured(aa, bb, cc)
+#cuda_match_cpu(aa, bb, cc)
 print 'end of matching in gpu'
 
 timeFinish = timer() # end count time
@@ -63,8 +82,10 @@ timeFinish = timer() # end count time
 #print str(cc)
 
 print 'hasil akhir matching :'
-for i in range(len(cc)) :
-    if cc[i] != 0 :
-        print str(cc[i])
 
-print 'execution time = ', timeFinish - timeStart
+for i in range(len(cc)) :
+    if cc[i] != 0 and cc[i] > 0 :
+        print cc[i]
+
+print 'execution time gpu = ', timeFinish - timeStart
+#print 'execution time cpu = ', timeFinish - timeStart
