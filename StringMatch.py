@@ -3,13 +3,23 @@ import numpy as np
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
 
-@cuda.jit(argtypes=[f8[:], f8[:], f8[:]])
+@cuda.jit(argtypes=[f8[:], f8[:], f8[:]], target='gpu')
 def cuda_compare(a, b, c):
     i = cuda.grid(1)
     if (a[i] == b[i]) :
         c[i] = a[i]
     else :
         c[i] = 0
+
+@cuda.jit(argtypes=[f8[:], f8[:], f8[:]], target='gpu')
+def cuda_match(a, b, c):
+    i = cuda.grid(1)
+    for k in range (len(b)) :
+        if (a[i] == b[k]) :
+            c[i] = a[i]
+            break
+        else :
+            c[i] = 0
 
 
 griddim = 50, 1
@@ -37,7 +47,8 @@ for line in f2:
 print 'hasil compare tiap element'
 #compare
 #print "N", N
-cuda_sum_configured = cuda_compare.configure(griddim, blockdim)
+#cuda_compare_configured = cuda_compare.configure(griddim, blockdim)
+cuda_match_configured = cuda_match.configure(griddim, blockdim)
 count = 0
 match = []
 a = list_master
@@ -50,7 +61,8 @@ bb = np.asarray(b,dtype=np.float64)
 cc = np.empty_like(aa,dtype=np.float64)
 timeStart = timer() # start count time
 
-cuda_sum_configured(aa, bb, cc)
+#cuda_compare_configured(aa, bb, cc)
+cuda_match_configured(aa, bb, cc)
 print 'res '
 
 timeFinish = timer() # end count time
