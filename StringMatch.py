@@ -31,14 +31,14 @@ def cuda_match_cpu(a, b, c) :
             else :
                 c[i] = 0
 
-griddim = 50, 1
-blockdim = 32, 1, 1
+griddim = 100, 1
+blockdim = 1024, 1, 1
 N = griddim[0] * blockdim[0]
 
-#f = open('acc_master.csv','r')
-#f2 = open('acc_ref.csv','r')
-f = open('sample1-1600.csv','r')
-f2 = open('sample2-1600.csv','r')
+f = open('acc_master.csv','r')
+f2 = open('acc_ref.csv','r')
+#f = open('sample1-10000.csv','r')
+#f2 = open('sample2-10000.csv','r')
 #f = open('acc_master_test.csv','r')
 #f2 = open('acc_ref_test.csv','r')
 
@@ -73,8 +73,8 @@ timeStart = timer() # start count time
 
 #cuda_compare_configured(aa, bb, cc)
 print 'start of matching in gpu'
-cuda_match_configured(aa, bb, cc)
-#cuda_match_cpu(aa, bb, cc)
+#cuda_match_configured(aa, bb, cc)
+cuda_match_cpu(aa, bb, cc)
 print 'end of matching in gpu'
 
 timeFinish = timer() # end count time
@@ -87,5 +87,5 @@ for i in range(len(cc)) :
     if cc[i] != 0 and cc[i] > 0 :
         print cc[i]
 
-print 'execution time gpu = ', timeFinish - timeStart
-#print 'execution time cpu = ', timeFinish - timeStart
+#print 'execution time gpu = ', timeFinish - timeStart
+print 'execution time cpu = ', timeFinish - timeStart
