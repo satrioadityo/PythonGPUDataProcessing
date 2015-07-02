@@ -3,11 +3,13 @@ import numpy as np
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
 
-@cuda.jit(argtypes=[f4[:], f4[:], f4[:]])
-def cuda_sum(a, b, c):
+@cuda.jit(argtypes=[f8[:], f8[:], f8[:]])
+def cuda_compare(a, b, c):
     i = cuda.grid(1)
-    #i = 0
-    c[i] = a[i] + b[i]
+    if (a[i] == b[i]) :
+        c[i] = a[i]
+    else :
+        c[i] = 0
 
 
 griddim = 50, 1
@@ -25,50 +27,34 @@ list_ref = []
 print 'isi file acc_master.csv'
 for line in f:
 	print line
-	list_master.append(float32(line))
+	list_master.append(float64(line))
 
 print 'isi file acc_ref.csv'
 for line in f2:
 	print line
-	list_ref.append(float32(line))
+	list_ref.append(float64(line))
 	
 print 'hasil compare tiap element'
 #compare
-print "N", N
-cuda_sum_configured = cuda_sum.configure(griddim, blockdim)
+#print "N", N
+cuda_sum_configured = cuda_compare.configure(griddim, blockdim)
 count = 0
 match = []
 a = list_master
 print a
 b = list_ref
 print b
-c = np.empty_like(a)
-print c
 
-a = np.array(np.random.random(5)*1000, dtype=np.float32)
-print a
-b = np.array(np.random.random(5)*1000, dtype=np.float32)
-print b
-c = np.empty_like(a)
-#print c
-timeStart = timer()
+aa = np.asarray(a,dtype=np.float64)
+bb = np.asarray(b,dtype=np.float64)
+cc = np.empty_like(aa,dtype=np.float64)
+timeStart = timer() # start count time
 
-cuda_sum_configured(a, b, c)
+cuda_sum_configured(aa, bb, cc)
 print 'res '
-print c
-#cuda_sum_configured(a, b, c)
-#vector_comp2(list_master,list_ref)
 
-#for i in range(len(list_master)):
-#    for j in range(len(list_ref)):
-        #print list_master[i],"master"
-        #print list_ref[j],"ref"
-#        aaa = vector_comp(list_master[i], list_ref[j])
-#        if aaa != 0 :
-#            match.append(str(list_master[i]))
-timeFinish = timer()
+timeFinish = timer() # end count time
 
-#for i in range(len(match)):
-#    print str(match[i])
+print str(cc)
 
 print 'execution time = ', timeFinish - timeStart
