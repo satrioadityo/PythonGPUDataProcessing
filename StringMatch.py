@@ -44,29 +44,27 @@ for line in f2:
 	print line
 	list_ref.append(float64(line))
 	
-print 'hasil compare tiap element'
-#compare
-#print "N", N
+# process of matching
 #cuda_compare_configured = cuda_compare.configure(griddim, blockdim)
 cuda_match_configured = cuda_match.configure(griddim, blockdim)
-count = 0
-match = []
-a = list_master
-print a
-b = list_ref
-print b
 
-aa = np.asarray(a,dtype=np.float64)
-bb = np.asarray(b,dtype=np.float64)
+aa = np.asarray(list_master,dtype=np.float64)
+bb = np.asarray(list_ref,dtype=np.float64)
 cc = np.empty_like(aa,dtype=np.float64)
 timeStart = timer() # start count time
 
 #cuda_compare_configured(aa, bb, cc)
+print 'start of matching in gpu'
 cuda_match_configured(aa, bb, cc)
-print 'res '
+print 'end of matching in gpu'
 
 timeFinish = timer() # end count time
 
-print str(cc)
+#print str(cc)
+
+print 'hasil akhir matching :'
+for i in range(len(cc)) :
+    if cc[i] != 0 :
+        print str(cc[i])
 
 print 'execution time = ', timeFinish - timeStart
