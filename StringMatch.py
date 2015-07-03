@@ -1,5 +1,6 @@
 from timeit import default_timer as timer
 import numpy as np
+import sys
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
 
@@ -32,11 +33,17 @@ def cuda_match_cpu(a, b, c) :
                 c[i] = 0
 
 griddim = 100, 1
-blockdim = 1024, 1, 1
+blockdim = 1024, 1
 N = griddim[0] * blockdim[0]
+M = griddim[1] * blockdim[1]
+print N,M
+file1 = raw_input("Nama File 1 : ");
+file2 =	raw_input("Nama File 2 : ");
 
-f = open('acc_master.csv','r')
-f2 = open('acc_ref.csv','r')
+f = open(file1,'r')
+f2 = open(file2,'r')
+#f = open('acc_master.csv','r')
+#f2 = open('acc_ref.csv','r')
 #f = open('sample1-10000.csv','r')
 #f2 = open('sample2-10000.csv','r')
 #f = open('acc_master_test.csv','r')
@@ -73,8 +80,11 @@ timeStart = timer() # start count time
 
 #cuda_compare_configured(aa, bb, cc)
 print 'start of matching in gpu'
+stream = cuda.stream()
+with stream.auto_synchronize():
+    cuda_match_configured(aa, bb, cc)
 #cuda_match_configured(aa, bb, cc)
-cuda_match_cpu(aa, bb, cc)
+#cuda_match_cpu(aa, bb, cc)
 print 'end of matching in gpu'
 
 timeFinish = timer() # end count time
@@ -87,5 +97,5 @@ for i in range(len(cc)) :
     if cc[i] != 0 and cc[i] > 0 :
         print cc[i]
 
-#print 'execution time gpu = ', timeFinish - timeStart
-print 'execution time cpu = ', timeFinish - timeStart
+print 'execution time gpu = ', timeFinish - timeStart
+#print 'execution time cpu = ', timeFinish - timeStart
