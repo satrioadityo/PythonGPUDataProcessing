@@ -59,15 +59,16 @@ aa = np.asarray(list_master,dtype=np.float64)
 bb = np.asarray(list_ref,dtype=np.float64)
 cc = np.empty_like(aa,dtype=np.float64)
 
-timeStart = timer() # start count time
+
 
 #cuda_compare_configured(aa, bb, cc)
 
-stream = cuda.stream()
-cc2 = []
 
 if runningMethod == 'g' :
     print 'start of process matching in gpu'
+    timeStart = timer() # start count time
+    stream = cuda.stream()
+    cc2 = []
     p = 0
     for i in range(int(math.ceil(aa.size/100000.0))) :
         cc2.append([])
@@ -75,24 +76,21 @@ if runningMethod == 'g' :
             cuda_match_configured(aa[p:p+102399], bb, cc)
         cc2[i].append(cc)
         p+=100000
+    timeFinish = timer() # end count time
     print 'end of process matching in gpu'
     
 elif runningMethod == 'c' :
     print 'start of process matching in cpu'
+    timeStart = timer() # start count time
     cuda_match_cpu(aa, bb, cc)
+    timeFinish = timer() # end count time
     print 'end of process matching in cpu'
 else :
     sys.exit
 
-timeFinish = timer() # end count time
-
 print 'hasil akhir matching :'
 if (runningMethod == 'g') :
-    print 'execution time gpu = ', timeFinish - timeStart,' detik'
-    for j in range (len(cc2)) :
-        for k in range(len(cc2[j])) :
-            print len(cc2[j][k])
-    
+    print 'execution time gpu = ', timeFinish - timeStart,' detik'    
     count = 0
     for i in range(len(cc2)) :
         for j in range(len(cc2[i])) :
@@ -102,8 +100,8 @@ if (runningMethod == 'g') :
     print 'jumlah data ',file1,' = ',len(list_master)
     print 'jumlah data ',file2,' = ',len(list_ref)
     print 'ada ',count,' data yang match'
-    
 elif runningMethod == 'c' :
+    print 'execution time cpu = ', timeFinish - timeStart,' detik'
     count = 0
     for i in range(len(cc)) :
         if cc[i] != 0 and cc[i] > 0 :
@@ -112,8 +110,7 @@ elif runningMethod == 'c' :
     print 'jumlah data ',file1,' = ',len(list_master)
     print 'jumlah data ',file2,' = ',len(list_ref)
     print 'ada ',count,' data yang match'
-    print 'execution time cpu = ', timeFinish - timeStart,' detik'
-
+    
 save = raw_input('simpan id str match ke file? (y/n)')
 if save == 'y' :
     if runningMethod == 'g' :
