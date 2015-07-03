@@ -81,8 +81,14 @@ timeStart = timer() # start count time
 #cuda_compare_configured(aa, bb, cc)
 print 'start of matching in gpu'
 stream = cuda.stream()
-with stream.auto_synchronize():
-    cuda_match_configured(aa, bb, cc)
+
+cc2 = []
+
+for i in range(aa.size/100000) :
+    with stream.auto_synchronize():
+        cuda_match_configured(aa, bb, cc)
+        for i in range (len(cc)) :
+            cc2.append(cc[i])
 #cuda_match_configured(aa, bb, cc)
 #cuda_match_cpu(aa, bb, cc)
 print 'end of matching in gpu'
@@ -93,9 +99,9 @@ timeFinish = timer() # end count time
 
 print 'hasil akhir matching :'
 
-for i in range(len(cc)) :
-    if cc[i] != 0 and cc[i] > 0 :
-        print cc[i]
+for i in range(len(cc2)) :
+    if cc2[i] != 0 and cc2[i] > 0 :
+        print cc2[i]
 
 print 'execution time gpu = ', timeFinish - timeStart
 #print 'execution time cpu = ', timeFinish - timeStart
