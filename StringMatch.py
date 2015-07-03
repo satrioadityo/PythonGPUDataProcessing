@@ -79,29 +79,36 @@ cc = np.empty_like(aa,dtype=np.float64)
 timeStart = timer() # start count time
 
 #cuda_compare_configured(aa, bb, cc)
-print 'start of matching in gpu'
+print 'start of process matching in gpu'
 stream = cuda.stream()
 
 cc2 = []
 
 for i in range(aa.size/100000) :
+    cc2.append([])
     with stream.auto_synchronize():
         cuda_match_configured(aa, bb, cc)
-        for i in range (len(cc)) :
-            cc2.append(cc[i])
+    cc2[i].append(cc)
 #cuda_match_configured(aa, bb, cc)
 #cuda_match_cpu(aa, bb, cc)
-print 'end of matching in gpu'
+print 'end of process matching in gpu'
 
 timeFinish = timer() # end count time
 
 #print str(cc)
 
 print 'hasil akhir matching :'
-
+count = 0
 for i in range(len(cc2)) :
-    if cc2[i] != 0 and cc2[i] > 0 :
-        print cc2[i]
+    for j in range(len(cc2[i])) :
+        for k in range(len(cc2[i][j])) :
+        #if cc2[i][j] != 0 :
+            if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
+                #print cc2[i][j][k]
+                count += 1
 
-print 'execution time gpu = ', timeFinish - timeStart
+print 'jumlah data ',file1,' = ',len(list_master)
+print 'jumlah data ',file2,' = ',len(list_ref)
+print 'ada ',count,' data yang match'
+print 'execution time gpu = ', timeFinish - timeStart,' detik'
 #print 'execution time cpu = ', timeFinish - timeStart
