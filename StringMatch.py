@@ -3,6 +3,7 @@ import numpy as np
 import sys
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
+import csv
 
 @cuda.jit(argtypes=[f8[:], f8[:], f8[:]], target='gpu')
 def cuda_compare(a, b, c):
@@ -112,3 +113,18 @@ print 'jumlah data ',file2,' = ',len(list_ref)
 print 'ada ',count,' data yang match'
 print 'execution time gpu = ', timeFinish - timeStart,' detik'
 #print 'execution time cpu = ', timeFinish - timeStart
+
+
+save = raw_input('simpan id str match ke file? (y/n)')
+if save == 'y' :
+    fileName = raw_input('nama file ? ')
+    for i in range(len(cc2)) :
+        for j in range(len(cc2[i])) :
+            for k in range(len(cc2[i][j])) :
+            #if cc2[i][j] != 0 :
+                if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
+                    f = open(fileName, 'wb')
+                    f.write(str(cc2[i][j][k]))
+    print 'Thanks for using our program'
+else :
+    print 'Thanks for using our program'
