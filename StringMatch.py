@@ -123,8 +123,8 @@ if save == 'y' :
             for k in range(len(cc2[i][j])) :
             #if cc2[i][j] != 0 :
                 if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
-                    f = open(fileName, 'wb')
-                    f.write(str(cc2[i][j][k]))
+                    f = open(fileName, 'ab')
+                    f.write(str(cc2[i][j][k])+'\n')
     print 'Thanks for using our program'
 else :
     print 'Thanks for using our program'
