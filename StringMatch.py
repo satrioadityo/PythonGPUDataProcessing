@@ -1,6 +1,6 @@
 from timeit import default_timer as timer
 import numpy as np
-import sys
+import sys, math
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
 
@@ -65,9 +65,10 @@ timeStart = timer() # start count time
 
 stream = cuda.stream()
 cc2 = []
+
 if runningMethod == 'g' :
     print 'start of process matching in gpu'
-    for i in range(aa.size/100000) :
+    for i in range(int(math.ceil(aa.size/100000.0))) :
         cc2.append([])
         with stream.auto_synchronize():
             cuda_match_configured(aa, bb, cc)
@@ -83,33 +84,43 @@ else :
 timeFinish = timer() # end count time
 
 print 'hasil akhir matching :'
-count = 0
-for i in range(len(cc2)) :
-    for j in range(len(cc2[i])) :
-        for k in range(len(cc2[i][j])) :
-        #if cc2[i][j] != 0 :
-            if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
-                #print cc2[i][j][k]
-                count += 1
-
-print 'jumlah data ',file1,' = ',len(list_master)
-print 'jumlah data ',file2,' = ',len(list_ref)
-print 'ada ',count,' data yang match'
 if (runningMethod == 'g') :
-    print 'execution time gpu = ', timeFinish - timeStart,' detik'
-elif runningMethod == 'c' :
-    print 'execution time cpu = ', timeFinish - timeStart,' detik'
-
-save = raw_input('simpan id str match ke file? (y/n)')
-if save == 'y' :
-    fileName = raw_input('nama file ? ')
+    count = 0
     for i in range(len(cc2)) :
         for j in range(len(cc2[i])) :
             for k in range(len(cc2[i][j])) :
             #if cc2[i][j] != 0 :
                 if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
-                    f = open(fileName, 'ab')
-                    f.write(str(cc2[i][j][k])+'\n')
-    print 'Thanks for using our program'
+                    #print cc2[i][j][k]
+                    count += 1
+
+    print 'jumlah data ',file1,' = ',len(list_master)
+    print 'jumlah data ',file2,' = ',len(list_ref)
+    print 'ada ',count,' data yang match'
+    print 'execution time gpu = ', timeFinish - timeStart,' detik'
+elif runningMethod == 'c' :
+    print 'jumlah data ',file1,' = ',len(list_master)
+    print 'jumlah data ',file2,' = ',len(list_ref)
+    print 'ada ',len(cc),' data yang match'
+    print 'execution time cpu = ', timeFinish - timeStart,' detik'
+
+save = raw_input('simpan id str match ke file? (y/n)')
+if save == 'y' :
+    if runningMethod == 'g' :
+        fileName = raw_input('nama file ? ')
+        for i in range(len(cc2)) :
+            for j in range(len(cc2[i])) :
+                for k in range(len(cc2[i][j])) :
+                #if cc2[i][j] != 0 :
+                    if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
+                        f = open(fileName, 'ab')
+                        f.write(str(cc2[i][j][k])+'\n')
+        print 'Thanks for using our program'
+    elif runningMethod == 'c' :
+        fileName = raw_input('nama file ? ')
+        for i in range(len(cc)) :
+            f = open(fileName, 'ab')
+            f.write(str(cc[i])+'\n')
+        print 'Thanks for using our program'
 else :
     print 'Thanks for using our program'
