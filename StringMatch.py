@@ -3,6 +3,7 @@ import numpy as np
 import sys, math
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
+import MySQLdb
 
 @cuda.jit(argtypes=[f8[:], f8[:], f8[:]], target='gpu')
 def cuda_match(a, b, c):
@@ -24,33 +25,53 @@ def cuda_match_cpu(a, b, c) :
             else :
                 c[i] = 0
 
+
 griddim = 100, 1
 blockdim = 1024, 1
-
-file1 = raw_input("Nama File 1 : ");
-file2 =	raw_input("Nama File 2 : ");
-runningMethod =	raw_input("Run menggunakan gpu/cpu (g or c) : ");
-
-f = open(file1,'r')
-f2 = open(file2,'r')
-
 list_master = []
 list_ref = []
+cc2 = []
 
-loadTime = timer()
-print f
-for line in f:
-	list_master.append(float64(line))
+#load data master
+def LoadDataMaster(db,table) :
+    db = MySQLdb.connect("localhost", "root", "", db)
+    cursor = db.cursor()
+    sql = "SELECT idstr from %s"%table 
+    idString = []
+    try:
+		cursor.execute(sql)
+		results = cursor.fetchall()
+		for row in results :
+			list_master.append(float64(row[0]))
+    except :
+		print "Error"
+    db.close
 
-print f2
-for line in f2:
-	list_ref.append(float64(line))
+#load data ref
+def LoadDataRef(db,table) :
+    db = MySQLdb.connect("localhost", "root", "", db)
+    cursor = db.cursor()
+    sql = "SELECT idstr from %s"%table 
+    idString = []
+    try:
+		cursor.execute(sql)
+		results = cursor.fetchall()
+		for row in results :
+			list_ref.append(float64(row[0]))
+    except :
+		print "Error"
+    db.close
 
-endofLoadTime = timer()
+dbMasterName = raw_input("Masukkan DB Master :")
+tblMasterName = raw_input("Masukkan Table Name :")
+LoadDataMaster(dbMasterName, tblMasterName)
+dbRefName = raw_input("Masukkan DB Ref :")
+tblRefName = raw_input("Masukkan Table Name :")
+LoadDataRef(dbRefName, tblRefName)
 
-print 'loading time = ', endofLoadTime - loadTime
-f.close()
-f2.close()	
+
+runningMethod =	raw_input("Run menggunakan gpu/cpu (g or c) : ");
+
 # process of matching
 #cuda_compare_configured = cuda_compare.configure(griddim, blockdim)
 cuda_match_configured = cuda_match.configure(griddim, blockdim)
@@ -68,7 +89,6 @@ if runningMethod == 'g' :
     print 'start of process matching in gpu'
     timeStart = timer() # start count time
     stream = cuda.stream()
-    cc2 = []
     p = 0
     for i in range(int(math.ceil(aa.size/100000.0))) :
         cc2.append([])
@@ -97,8 +117,8 @@ if (runningMethod == 'g') :
             count += len(cc2[i][j])-cc2[i][j].tolist().count(0)
 
 
-    print 'jumlah data ',file1,' = ',len(list_master)
-    print 'jumlah data ',file2,' = ',len(list_ref)
+    print 'jumlah data di table',tblMasterName,' = ',len(list_master)
+    print 'jumlah data di table',tblRefName,' = ',len(list_ref)
     print 'ada ',count,' data yang match'
 elif runningMethod == 'c' :
     print 'execution time cpu = ', timeFinish - timeStart,' detik'
@@ -107,27 +127,35 @@ elif runningMethod == 'c' :
         if cc[i] != 0 and cc[i] > 0 :
             cc2.append(cc[i])
             count += 1
-    print 'jumlah data ',file1,' = ',len(list_master)
-    print 'jumlah data ',file2,' = ',len(list_ref)
+    print 'jumlah data di table',tblMasterName,' = ',len(list_master)
+    print 'jumlah data di table',tblRefName,' = ',len(list_ref)
     print 'ada ',count,' data yang match'
     
 save = raw_input('simpan id str match ke file? (y/n)')
 if save == 'y' :
     if runningMethod == 'g' :
-        fileName = raw_input('nama file ? ')
+        dBase = raw_input("Masukkan Nama Database : ")
+        fileName = raw_input("Masukkan Nama Table : ")
+        db = MySQLdb.connect("localhost", "root", "", dBase)
+        cursor = db.cursor()
         for i in range(len(cc2)) :
             for j in range(len(cc2[i])) :
                 for k in range(len(cc2[i][j])) :
                 #if cc2[i][j] != 0 :
                     if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
-                        f = open(fileName, 'ab')
-                        f.write(str(cc2[i][j][k])+'\n')
+                        cursor.execute("INSERT into %s values (null, %d) "% (fileName, int(cc2[i][j][k] )))
+                        db.commit()
+                        #f.write(str(cc2[i][j][k])+'\n')
         print 'Thanks for using our program'
     elif runningMethod == 'c' :
-        fileName = raw_input('nama file ? ')
+        dBase = raw_input("Masukkan Nama Database : ")
+        fileName = raw_input("Masukkan Nama Table : ")
+        db = MySQLdb.connect("localhost", "root", "", dBase)
+        cursor = db.cursor()
         for i in range(len(cc2)) :
-            f = open(fileName, 'ab')
-            f.write(str(cc2[i])+'\n')
+            #f = open(fileName, 'ab')
+            cursor.execute("INSERT into %s values (null, %d) "% (fileName, int(cc2[i])))
+            db.commit()
         print 'Thanks for using our program'
 else :
     print 'Thanks for using our program'
