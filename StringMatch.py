@@ -1,10 +1,13 @@
-from timeit import default_timer as timer
+# Library yang digunakan untuk mengimplementasikan matching string cuda python
+import MySQLdb
 import numpy as np
 import sys, math
 from numbapro import vectorize, float64, float32, void, cuda
 from numba import *
-import MySQLdb
+from timeit import default_timer as timer
 
+# Fungsi cuda_match :
+# fungsi yang digunakan untuk matching id string yang diproses menggunakan gpu
 @cuda.jit(argtypes=[f8[:], f8[:], f8[:]], target='gpu')
 def cuda_match(a, b, c):
     i = cuda.grid(1)
@@ -15,9 +18,11 @@ def cuda_match(a, b, c):
         else :
             c[i] = 0
 
+# Fungsi cuda_match_cpu :
+# fungsi yang digunakan untuk matching id string yang diproses menggunakan cpu
 def cuda_match_cpu(a, b, c) :
     for i in range(len(a)) :
-        print i
+        #print i
         for j in range(len(b)) :
             if a[i] == b[j] :
                 c[i] = a[i]
@@ -26,11 +31,14 @@ def cuda_match_cpu(a, b, c) :
                 c[i] = 0
 
 
+# griddim adalah jumlah thread yang akan digunakan tiap block
 griddim = 100, 1
+# blockdim adalah jumlah block dalam 1 grid
 blockdim = 1024, 1
-list_master = []
-list_ref = []
-cc2 = []
+
+list_master = [] # arraylist untuk menampung id string
+list_ref = []    # arraylist untuk menampung id string
+cc2 = []         # arraylist untuk menampung hasil matching id string
 
 #load data master
 def LoadDataMaster(db,table) :
@@ -62,77 +70,86 @@ def LoadDataRef(db,table) :
 		print "Error"
     db.close
 
-dbMasterName = raw_input("Masukkan DB Master :")
-tblMasterName = raw_input("Masukkan Table Name :")
-LoadDataMaster(dbMasterName, tblMasterName)
-dbRefName = raw_input("Masukkan DB Ref :")
-tblRefName = raw_input("Masukkan Table Name :")
-LoadDataRef(dbRefName, tblRefName)
+# masukan untuk program, database mana yang akan digunakan
+dbMasterName = raw_input("Masukkan DB Master : ")
+tblMasterName = raw_input("Masukkan Table Name : ")
+LoadDataMaster(dbMasterName, tblMasterName)     # proses load data
+dbRefName = raw_input("Masukkan DB Reference : ")
+tblRefName = raw_input("Masukkan Table Name : ")
+LoadDataRef(dbRefName, tblRefName)              # proses load data
 
 
-runningMethod =	raw_input("Run menggunakan gpu/cpu (g or c) : ");
+# pilihan untuk menentukan methode running program yang akan digunakan
+runningMethod =	raw_input("Run menggunakan GPU/CPU (g or c) : ");
 
 # process of matching
 #cuda_compare_configured = cuda_compare.configure(griddim, blockdim)
 cuda_match_configured = cuda_match.configure(griddim, blockdim)
 
+# karna gpu menggunakan konsep array oriented, maka konversikan list menjadi array
 aa = np.asarray(list_master,dtype=np.float64)
 bb = np.asarray(list_ref,dtype=np.float64)
 cc = np.empty_like(aa,dtype=np.float64)
 
 
-
-#cuda_compare_configured(aa, bb, cc)
-
-
+#jika metode gpu yang dipilih
 if runningMethod == 'g' :
-    print 'start of process matching in gpu'
+    print '\n*** Start of process matching in GPU ***'
     timeStart = timer() # start count time
     stream = cuda.stream()
     p = 0
+    # pemrosesan data dilakukan secara iteratif, per 100000 data
     for i in range(int(math.ceil(aa.size/100000.0))) :
         cc2.append([])
+        # proses menjalankan fungsi matching
         with stream.auto_synchronize():
             cuda_match_configured(aa[p:p+102399], bb, cc)
         cc2[i].append(cc)
         p+=100000
     timeFinish = timer() # end count time
-    print 'end of process matching in gpu'
+    print '*** End of process matching in GPU ***'
     
+#jika metode cpu yang dipilih
 elif runningMethod == 'c' :
-    print 'start of process matching in cpu'
+    print '\n*** Start of process matching in CPU ***'
     timeStart = timer() # start count time
     cuda_match_cpu(aa, bb, cc)
     timeFinish = timer() # end count time
-    print 'end of process matching in cpu'
+    print '*** End of process matching in CPU ***'
 else :
     sys.exit
 
-print 'hasil akhir matching :'
+print '\nHasil akhir matching :'
+print '======================================================'
 if (runningMethod == 'g') :
-    print 'execution time gpu = ', timeFinish - timeStart,' detik'    
+    print 'Execution time GPU = ', timeFinish - timeStart,' detik'    
     count = 0
+    # hitung jumlah yang match
     for i in range(len(cc2)) :
         for j in range(len(cc2[i])) :
             count += len(cc2[i][j])-cc2[i][j].tolist().count(0)
 
 
-    print 'jumlah data di table',tblMasterName,' = ',len(list_master)
-    print 'jumlah data di table',tblRefName,' = ',len(list_ref)
-    print 'ada ',count,' data yang match'
+    print 'Jumlah data di table',tblMasterName,' = ',len(list_master)
+    print 'Jumlah data di table',tblRefName,' = ',len(list_ref)
+    print 'Ada ',count,' data yang match'
 elif runningMethod == 'c' :
-    print 'execution time cpu = ', timeFinish - timeStart,' detik'
+    print 'Execution time CPU = ', timeFinish - timeStart,' detik'
     count = 0
+    # hitung julah yang match
     for i in range(len(cc)) :
         if cc[i] != 0 and cc[i] > 0 :
             cc2.append(cc[i])
             count += 1
-    print 'jumlah data di table',tblMasterName,' = ',len(list_master)
-    print 'jumlah data di table',tblRefName,' = ',len(list_ref)
-    print 'ada ',count,' data yang match'
+    print 'Jumlah data di table',tblMasterName,' = ',len(list_master)
+    print 'Jumlah data di table',tblRefName,' = ',len(list_ref)
+    print 'Ada ',count,' data yang match'
+print '======================================================\n'
     
+#pilihan apakah hasil yang match akan disimpan?
 save = raw_input('simpan id str match ke file? (y/n)')
 if save == 'y' :
+    # proses penyimpanan jika user memilih ingin menyimpan
     if runningMethod == 'g' :
         dBase = raw_input("Masukkan Nama Database : ")
         fileName = raw_input("Masukkan Nama Table : ")
@@ -141,21 +158,20 @@ if save == 'y' :
         for i in range(len(cc2)) :
             for j in range(len(cc2[i])) :
                 for k in range(len(cc2[i][j])) :
-                #if cc2[i][j] != 0 :
                     if cc2[i][j][k] != 0 and cc2[i][j][k] > 0 :
                         cursor.execute("INSERT into %s values (null, %d) "% (fileName, int(cc2[i][j][k] )))
                         db.commit()
-                        #f.write(str(cc2[i][j][k])+'\n')
         print 'Thanks for using our program'
+    # proses penyimpanan jika user memilih ingin menyimpan
     elif runningMethod == 'c' :
         dBase = raw_input("Masukkan Nama Database : ")
         fileName = raw_input("Masukkan Nama Table : ")
         db = MySQLdb.connect("localhost", "root", "", dBase)
         cursor = db.cursor()
         for i in range(len(cc2)) :
-            #f = open(fileName, 'ab')
             cursor.execute("INSERT into %s values (null, %d) "% (fileName, int(cc2[i])))
             db.commit()
         print 'Thanks for using our program'
+# jika tidak ingin disimpan, keluar
 else :
     print 'Thanks for using our program'
